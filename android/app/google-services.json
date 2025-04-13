@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "935404294790",
+    "project_id": "cmsc23-todo-app-cjtbernardino",
+    "storage_bucket": "cmsc23-todo-app-cjtbernardino.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:935404294790:android:7a76ec0c592c3e6c06f707",
+        "android_client_info": {
+          "package_name": "com.example.week8datapersistence"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC_7IF_7mOac8G2JUusg8fB2d0CLeJw8a0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

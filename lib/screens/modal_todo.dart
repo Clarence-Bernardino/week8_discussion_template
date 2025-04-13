@@ -30,7 +30,7 @@ class TodoModal extends StatelessWidget {
       case 'Delete':
         {
           return Text(
-            "Are you sure you want to delete '${item!.title}'?",
+            "Are you sure you want to delete '${item?.title ?? 'this item'}'?",
           );
         }
       // Edit and add will have input field in them

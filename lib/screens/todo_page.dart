@@ -42,8 +42,7 @@ class _TodoPageState extends State<TodoPage> {
           return ListView.builder(
             itemCount: snapshot.data?.docs.length,
             itemBuilder: ((context, index) {
-              Todo todo = Todo.fromJson(
-                  snapshot.data?.docs[index].data() as Map<String, dynamic>);
+              Todo todo = Todo.fromJson(snapshot.data!.docs[index]);
               return Dismissible(
                 key: Key(todo.id.toString()),
                 onDismissed: (direction) {
@@ -71,6 +70,11 @@ class _TodoPageState extends State<TodoPage> {
                     children: [
                       IconButton(
                         onPressed: () {
+                          todo.id = snapshot.data?.docs[index].id;
+                          // snapshop.data?.docs[index].id; // ACCESS ID
+                          // snapshot.data?.docs[index].data() // ACESS DATA
+                          // snapshop.data?.docs[index].data().title;
+                          // snapshop.data?.docs[index].data().completed;
                           showDialog(
                             context: context,
                             builder: (BuildContext context) => TodoModal(
