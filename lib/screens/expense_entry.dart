@@ -1,12 +1,13 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../models/expenses_model.dart';
 import '../providers/expenses_provider.dart';
 import '../Utilities/widgets.dart';
 import '../Utilities/my_drawer.dart';
 
 class ExpenseEntry extends StatefulWidget {
-  const ExpenseEntry({super.key});
+  final Expense? expenseToEdit; // nullable svariable for editing expense
+  const ExpenseEntry({super.key, this.expenseToEdit}); // takes in a key and an expense to edit (if any)
 
   @override
   State<ExpenseEntry> createState() => _MyWidgetState();
@@ -15,25 +16,37 @@ class ExpenseEntry extends StatefulWidget {
 class _MyWidgetState extends State<ExpenseEntry> {
   GlobalKey<FormState> formKey = GlobalKey<FormState>();
 
-  // Controllers
+  // controllers
   TextEditingController nameController = TextEditingController();
   TextEditingController descriptionController = TextEditingController();
-  String selectedCategory = category[0];  // defualt is bills
+  String selectedCategory = category[0]; // defualt is bills
   TextEditingController amountController = TextEditingController();
+  bool isPaid = false;  // payment status
 
+  // available expense categories
   static final List<String> category = [
-    "Bills",
-    "Transporation",
-    "Food",
-    "Utilities",
-    "Health",
-    "Enterntainment",
-    "Miscellanecous",
+    "Bills", "Transportation", "Food",
+    "Utilities", "Health", "Entertainment", "Miscellaneous",
   ];
 
   // lifecycle methods
   @override
+  void initState() {
+    super.initState();
+    selectedCategory = category[0];
+    // pre fill form if editing existing expense
+    if (widget.expenseToEdit != null) {
+      nameController.text = widget.expenseToEdit!.name;
+      descriptionController.text = widget.expenseToEdit!.description;
+      amountController.text = widget.expenseToEdit!.amount.toString();
+      selectedCategory = widget.expenseToEdit!.category;
+      isPaid = widget.expenseToEdit!.paid;
+    }
+  }
+
+  @override
   void dispose() {
+    // stop listening
     nameController.dispose();
     descriptionController.dispose();
     amountController.dispose();
@@ -44,69 +57,53 @@ class _MyWidgetState extends State<ExpenseEntry> {
   Future<void> submitExpenseToFirebase() async {
     if (!formKey.currentState!.validate()) return;
 
-    try {
-      await FirebaseFirestore.instance.collection('expenses').add({
-        'name': nameController.text.trim(),
-        'description': descriptionController.text.trim(),
-        'amount': double.parse(amountController.text),
-        'category': selectedCategory,        
-      })
+    final provider = Provider.of<ExpenseListProvider>(context, listen: false);
+
+    if (widget.expenseToEdit == null) {
+      await provider.addExpense(  // add new expense
+        Expense(
+            name: nameController.text.trim(),
+            description: descriptionController.text.trim(),
+            category: selectedCategory,
+            amount: double.parse(amountController.text),
+            paid: isPaid,
+            ),
+      );
+    } else {
+      // editing exiting expense
+      await provider.editExpense(
+        widget.expenseToEdit!,
+        nameController.text.trim(),
+        descriptionController.text.trim(),
+        selectedCategory,
+        double.parse(amountController.text),
+        isPaid,
+      );
     }
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+          content: Text(widget.expenseToEdit == null
+              ? "Expense added!"
+              : "Expense updated!")),
+    );
+
+    Navigator.pop(context); // go back to previous screen
   }
 
-  // TO REVAMP
-  // // empty map to be populated with data later
-  // Map<String, String> summary = {};
-
-  // // update summary when the save button is clicked
-  // void updateSummary() {
-  //   // store the new entry
-  //   Map<String, String> newEntry = {
-  //     "Name": nameController.text,
-  //     if (descriptionController.text.isNotEmpty)
-  //       "Nickname": descriptionController.text,
-  //     "Age": amountController.text,
-  //     "Exercise": exercisedToday ? "Exercised Today!" : "Rest Day",
-  //     "Mood": "$selectedCategory ${intensity.roundToDouble()}/10",
-  //     "Weather": selectedWeather,
-  //   };
-
-  //   // get existing entries for comparison below
-  //   var entryHistory = context.read<EntryHistory>().entries;
-
-  //   // check for duplicates (ignore nickname and date)
-  //   bool isDuplicate = entryHistory.any((entry) {
-  //     for (var key in newEntry.keys) {
-  //       if (key == "Nickname" || key == "Date Recorded") continue; // Ignore these fields
-
-  //       if (entry[key] != newEntry[key]) {
-  //         return false;
-  //       }
-  //     }
-
-  //     return true; // if no differences, it's a duplicate
-  //   });
-
-  //   if (isDuplicate) {
-  //     // show a warning message using scaffoldMessenger(it exists higher in the widget tree)
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       SnackBar(content: Text("Duplicate entry detected!")),
-  //     );
-  //     return;
-  //   }
-
-  //   // if not a duplicate, save the entry
-  //   setState(() {
-  //     summary = newEntry; // update the summary
-  //     context.read<EntryHistory>().addEntry(newEntry); // add entry to history
-  //   });
-  // }
+  void resetForm() { // reset form fields
+    formKey.currentState?.reset();
+    nameController.clear();
+    descriptionController.clear();
+    amountController.clear();
+    setState(() {
+      selectedCategory = category[0];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    
     return Scaffold(
-      appBar: AppBar(title: const Text("Exercise 5")), // title
+      appBar: AppBar(title: const Text("Expense Entry")), // title
       drawer: MyDrawer(),
       body: Form(
         key: formKey,
@@ -120,13 +117,17 @@ class _MyWidgetState extends State<ExpenseEntry> {
                   // make the whole thing scrollable
                   child: Column(
                     children: [
-                      Text("Expenses",
-                          style: TextStyle(
-                              fontSize: 32, fontStyle: FontStyle.italic)),
+                      Text(
+                        "Enter Expense",
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
                       CustomTextFormFieldWidget(
                         // custom widget with validation
                         labelText: "Name",
-                        prefixIcon: Icon(Icons.auto_awesome),
+                        prefixIcon: const Icon(Icons.label),
                         controller: nameController,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
@@ -141,31 +142,29 @@ class _MyWidgetState extends State<ExpenseEntry> {
                       CustomTextFormFieldWidget(
                         // custom widget without validation
                         labelText: "Description",
-                        prefixIcon: Icon(Icons.auto_awesome),
+                        prefixIcon: const Icon(Icons.description),
                         controller: descriptionController,
                       ),
 
                       const SizedBox(height: 20), // space
 
-                      Expanded(
-                            child: CustomTextFormFieldWidget(
-                              // custom widget with validation
-                              labelText: "Amount",
-                              prefixIcon: Icon(Icons.auto_awesome),
-                              controller: amountController,
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return "Please enter your age";
-                                }
-                                if (int.tryParse(value) == null) {
-                                  return "Age must be a number";
-                                }
-                                return null;
-                              },
-                            ),
-                          ),
+                      CustomTextFormFieldWidget(
+                        // custom widget with validation
+                        labelText: "Amount",
+                        prefixIcon: const Icon(Icons.attach_money),
+                        controller: amountController,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Please enter the amount";
+                          }
+                          if (int.tryParse(value) == null) {
+                            return "Amount must be a number";
+                          }
+                          return null;
+                        },
+                      ),
 
-                      SizedBox(height: 50),
+                      const SizedBox(height: 20),
 
                       CustomDropDownFormFieldWidget(
                         chosenWeather: selectedCategory,
@@ -177,52 +176,45 @@ class _MyWidgetState extends State<ExpenseEntry> {
                           });
                         },
                       ),
+                      const SizedBox(height: 40),
                     ],
                   ),
                 ),
               ),
+
               // Save Button
-
-              const SizedBox(height: 10), // space
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  CustomSaveButton(
-                    formKey: formKey,
-                    updateSummary: () {
-                      setState(() {
-                        updateSummary();       
-                      });
-                    },
+                  ElevatedButton(
+                    onPressed: submitExpenseToFirebase,
+                    child: const Text("Save"),
                   ),
-
-                  const SizedBox(width: 50), // space
-
-                  CustomResetButton(
-                    formKey: formKey,
-                    resetState: () {
-                      setState(() {
-                        nameController.clear();
-                        descriptionController.clear();
-                        amountController.clear();
-                        selectedCategory = category[0];
-                        summary.clear(); 
-                      });
-                    },
+                  const SizedBox(width: 30),
+                  ElevatedButton(
+                    onPressed: resetForm,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                    ),
+                    child: const Text("Reset"),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 20),
-
-              // display summary
-              if (summary.isNotEmpty)
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: summary.entries.map((entry) {
-                    return Text("${entry.key}: ${entry.value}");
-                  }).toList(),
+              const SizedBox(height: 10),
+              if (widget.expenseToEdit != null)
+                ElevatedButton.icon(
+                  icon: Icon(Icons.delete),
+                  label: Text("Delete"),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                  onPressed: () async {
+                    final provider = Provider.of<ExpenseListProvider>(context,
+                        listen: false);
+                    await provider.deleteExpense(widget.expenseToEdit!);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text("Expense deleted")),
+                    );
+                    Navigator.pop(context);
+                  },
                 ),
             ],
           ),

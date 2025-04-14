@@ -1,15 +1,13 @@
-import 'dart:convert';
+import 'dart:convert';  // allows JSON string conversion and decoding
+import 'package:cloud_firestore/cloud_firestore.dart';  // provides access to firestore db
 
-import 'package:cloud_firestore/cloud_firestore.dart';
-
-class Expense {
+class Expense { // Expense object
   String? id; // Firestore auto generated id
   String name;
   String description;
   String category;
-  // List<String> category = ["Bills", "Transportation", "Food", "Utilities", 
-  // "Health", "Entertainment", "Miscellaneous"];
   double amount;
+  bool paid;
 
   // constructor
   Expense({
@@ -17,34 +15,37 @@ class Expense {
     required this.name,
     required this.description,
     required this.category,
-    required this.amount
+    required this.amount,
+    required this.paid
   });
 
-  // Factory constructor to instantiate object from json format
-  factory Expense.fromJson(DocumentSnapshot doc) { // documentSnapshot for reading Firestore data 
-    Map<String, dynamic> json = doc.data() as Map<String, dynamic>;
-    return Expense(
+  // Factory constructor to turn a firestore document into an Expense object
+  factory Expense.fromJson(DocumentSnapshot doc) {
+    Map<String, dynamic> json = doc.data() as Map<String, dynamic>; // convert the document to a map
+    return Expense( // use the converted map to extract the fields
       id: doc.id,
-      name: json['name'], // provide default value if null
-      description: json['description'],
-      category: json['category'],
-      amount: json['amount'],
+      name: json['name'] ?? '', // provide default value if null
+      description: json['description'] ?? '',
+      category: json['category'] ?? '',
+      amount: json['amount'] ?? 0,
+      paid: json['paid'] ?? false
     );
   }
   
   // connverts a JSON string containing a list of expenses into a list of Todo objects in dart
   static List<Expense> fromJsonArray(String jsonData) {
-    final Iterable<dynamic> data = jsonDecode(jsonData);
-    return data.map<Expense>((dynamic d) => Expense.fromJson(d)).toList();
+    final Iterable<dynamic> data = jsonDecode(jsonData); // takes JSON text into a Dart map
+    return data.map<Expense>((dynamic d) => Expense.fromJson(d)).toList();  // now convert the map to an Expense
   }
 
-  // converts a Todo object to a Firestore-friendly Map
-  Map<String, dynamic> toJson(Expense expense) {
+  // converts an Expense object to a Map<String, dynamic> so the Firestore can read it
+  Map<String, dynamic> toJson() {
     return {
       'name': name,
       'description': description,
       'category': category,
       'amount': amount,
+      'paid' : paid
     };
   }
 }

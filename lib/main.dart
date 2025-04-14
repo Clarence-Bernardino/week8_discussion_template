@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'screens/home_screen.dart';
 import 'screens/expense_entry.dart';
-import 'screens/mood_history.dart';
-import 'screens/empty_entries_screen.dart';
+import 'screens/expense_history.dart';
 import 'Utilities/theme.dart';
 import 'package:week8datapersistence/firebase_options.dart';
 import 'providers/todo_provider.dart';
@@ -28,18 +27,17 @@ Future<void> main() async {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      themeMode: ThemeMode.system, // if device is on dark/light mode, follow tha ttheme
-      theme: rusticTheme(), 
-      home: const HomeScreen(),
+      themeMode: ThemeMode.system,
+      theme: rusticTheme(),
+      initialRoute: '/',
       routes: {
-        '/todo': (context) => const TodoPage(),
-        "/empty": (context) => const EmptyEntriesScreen(),
-        "/entries": (context) => const ExpenseEntry(),
-        "/history": (context) => const MoodHistory(),
+        '/': (context) => const TodoPage(),
+        '/home': (context) => const HomeScreen(),
+        '/add-expense': (context) => const ExpenseEntry(),
+        '/expense-history': (context) => const HistoryScreen(),
       },
     );
   }

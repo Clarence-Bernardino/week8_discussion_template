@@ -18,7 +18,7 @@ class EmptyEntriesScreen extends StatelessWidget {
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () {
-                Navigator.pushNamed(context, "/entries");
+                Navigator.pushNamed(context, "/add-expense");
               },
               child: const Text("Add Entries"),
             ),

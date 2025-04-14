@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:week8datapersistence/Utilities/my_drawer.dart';
 import '../models/todo_model.dart';
 import '../providers/todo_provider.dart';
 import 'modal_todo.dart';
@@ -22,16 +23,13 @@ class _TodoPageState extends State<TodoPage> {
       appBar: AppBar(
         title: const Text("Todo"),
       ),
+      drawer: MyDrawer(),
       body: StreamBuilder(
         stream: todosStream,
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(
               child: Text("Error encountered! ${snapshot.error}"),
-            );
-          } else if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(
-              child: CircularProgressIndicator(),
             );
           } else if (!snapshot.hasData) {
             return const Center(
